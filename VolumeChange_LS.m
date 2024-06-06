@@ -111,17 +111,22 @@ g = [g1; g2; g3];
 x = [resultsPDfull;resultsPDapical;resultsPDbasal];
 
 boxplot(x,g,'Symbol','')
-ylabel('Percent Diff in Volume over 1 min','FontSize',fs)
-set(gca,'Ylim',[-5 25])
+ylabel('Percent Diff in Volume over 5 min','FontSize',fs)
+%set(gca,'Ylim',[-5 25])
+set(gca,'Ylim',[0 25])
 grid on
 
 % print the following p-values to command window
 [~,p1] = kstest2(resultsPDfull,resultsPDapical)
 [~,p2] = kstest2(resultsPDfull,resultsPDbasal)
 
+set(findobj(gca,'type','line'),'linew',2)
+set(gca,'FontSize',20)
 
-        
 end %function
+
+
+
 
 function [PD] = PercentDiff(Mat,DeltaF)
 % finds the percent differences between every two points separated by
