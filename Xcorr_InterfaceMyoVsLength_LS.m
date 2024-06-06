@@ -44,6 +44,9 @@ for mn=1:Nmovies
 %     Vertex2Myo   = loadStruct.Vertex2Intensity_Myo(:,:,zvec);
 %     InterfaceMyo = (Vertex1Myo + Vertex2Myo)/2;
 
+    % loadStruct = load('IntensityDataTOPHAT_ball8_3.mat').IntensityData; % for zipper data
+    % InterfaceMyo = loadStruct.InterfaceIntensity(:,:,zvec);
+
     loadStruct = load('trackingMatrixZT_NodeFix.mat');
     Tmatrix = loadStruct.trackingMatrixZT_NodeFix(:,:,zvec);
     LengthMat = Tmatrix(:,1:8:end,:)*XYsf;
@@ -67,7 +70,7 @@ for mn=1:Nmovies
         % find a time vector in which the junction is present at all
         % depths, if it is empty of has a duration of less than 3 minutes
         % skip to next junction
-        [~, tvecF] = FiniteSequenceFromNans(mean(IntMyo,1),1);
+        [~, tvecF] = FiniteSequenceFromNans(mean(IntMyo,1));%,1);
         if isempty(tvecF) || length(tvecF)*spf/60 <3
             continue;
         end
@@ -279,4 +282,25 @@ mat2 = Signal(:,(1+sh):tlen);
 Signalsh = (mat2-mat1)/sh;
 
 end % of function
+
+function [VectorOut, idx_out] = FiniteSequenceFromNans(VectorIn)
+% This function takes a vector, which may contain NaN values throughout,
+% and outputs the longest continuous sequence which contains no NaNs. It 
+% also outputs the indices of that sequence. For example, the input 
+% [ NaN NaN 1 4 NaN 7 9 12 NaN] gives the out put [7 9 12] with indices
+% [6 7 8].
+
+if all(isnan(VectorIn(:)))  % These 5 lines were added to return empty outputs
+    VectorOut = [];         % when the input vector is all nans
+    idx_out = [];
+    return;
+end
+
+
+finiteIdx = find(isfinite(VectorIn));
+x = [0 cumsum(diff(finiteIdx)~=1)];
+idx_out = finiteIdx(x==mode(x));
+VectorOut = VectorIn(idx_out);
+    
+end % end FiniteSequenceFromNans
 

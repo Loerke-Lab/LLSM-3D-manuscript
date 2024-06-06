@@ -15,7 +15,8 @@ function [ExpandMatAll,ContractMatAll] = AreaPropagationFindPeaks_LS_revised(dat
 %           the 2 layers correspond to Peak Area Rate (1st layer), and Peak
 %           Area time (2nd layer).
 
-close all;
+%close all;
+%figure
 
 zvec = 1:60;
 Nz = numel(zvec);
@@ -153,20 +154,20 @@ for mn=1:Nmovies
 
         if showEgs
 
-%             subplot(2,2,1)
-%             ADFe = AreaRateZvT;
-%             ADFe(Lexp>0) = NaN;
-%             imagesc(tvecMin,zvec*Zsf,ADFe)
-%             title('Expansion Peaks')
-%             
-%             subplot(2,2,2)
-%             imagesc(tvecMin,zvec*Zsf,Lexp)
-%             title('Expansion Peaks Labeled')
-            
-%             subplot(2,2,3)
-%             DiffBasalCont = (ExpandMat(16,:,2)-ExpandMat(1,:,2));
-%             histogram(DiffBasalCont)
-%             title('Apical Expansion 4um delay time')
+            % subplot(2,2,1)
+            % ADFe = AreaRateZvT;
+            % ADFe(Lexp>0) = NaN;
+            % imagesc(tvecMin,zvec*Zsf,ADFe)
+            % title('Expansion Peaks')
+            % 
+            % subplot(2,2,2)
+            % imagesc(tvecMin,zvec*Zsf,Lexp)
+            % title('Expansion Peaks Labeled')
+            % 
+            % subplot(2,2,3)
+            % DiffBasalCont = (ExpandMat(16,:,2)-ExpandMat(1,:,2));
+            % histogram(DiffBasalCont)
+            % title('Apical Expansion 4um delay time')
 
             subplot(1,3,1)
             imagesc(tvecMin,zvec*Zsf,AreaRateZvT);colorbar
@@ -203,86 +204,347 @@ end % movie
 
 figure (1)
 %edges = -120:20:120;
+%centers = -110:20:110;
 
-
-% %%% Added 4/26/23 KB %%%
-%centers = -60:10:60;
-%centers = -120:20:120;
 centers = -(spf*12):spf:(spf*12);
 d = diff(centers)/2;
 edges = [centers(1)-d(1), centers(1:end-1)+d, centers(end)+d(end)];
-%%%
+
 
 Nedges = length(edges)-1;
 ApicalContHist = NaN(22,Nedges);
 
+posValuesA = [];
+posValuesB = [];
+negValuesA = [];
+negValuesB = [];
+
 for ii=1:22
     DiffBasalCont = spf*(ContractMatAll(ii+38,:,2)-ContractMatAll(ii,:,2));
     DiffBasalCont(isnan(DiffBasalCont)) = [];
-    [N,~]= histcounts(DiffBasalCont,edges,'Normalization', 'probability');
-    
+    [N,~,bin]= histcounts(DiffBasalCont,edges,'Normalization', 'probability');
+
     ApicalContHist(ii,:) = N;
+
+    % save positive and negative values for innerquartile range later
+    if ii >= 1 && ii <=5
+        positiveValues = DiffBasalCont(DiffBasalCont>0);
+        posValuesA = horzcat(posValuesA,positiveValues);
+
+        negativeValues = DiffBasalCont(DiffBasalCont<0);
+        negValuesA = horzcat(negValuesA,negativeValues);
+
+        positiveValues = [];
+        negativeValues = [];
+    elseif ii >= 18 && ii <= 22
+        positiveValues = DiffBasalCont(DiffBasalCont>0);
+        posValuesB = horzcat(posValuesB,positiveValues);
+
+        negativeValues = DiffBasalCont(DiffBasalCont<0);
+        negValuesB = horzcat(negValuesB,negativeValues);
+
+        positiveValues = [];
+        negativeValues = [];
+    end
+
+    
 end
 
 
-% %%% Added 5/1/23 KB %%%
-% Nedges = length(edges)-1;
-% ApicalContHist = NaN(7,Nedges);
-% 
-% for ii=1:7
-%     DiffBasalCont = spf*(ContractMatAll(ii+53,:,2)-ContractMatAll(ii,:,2));
-%     DiffBasalCont(isnan(DiffBasalCont)) = [];
-%     [N,~]= histcounts(DiffBasalCont,edges,'Normalization', 'probability');
-%     
-%     ApicalContHist(ii,:) = N;
-% end
-% %%%
+apicalLayers = 1:5; % first five
+basalLayers = 18:22; % last five
 
-subplot(1,4,1)
-%imagesc(edges(1:end-1),(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
-%imagesc(edges,(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
+lateralLayers = 11;
+
+
+% percent positive and negative
+numColumns = numel(centers);
+% get the percent negative and percent positive values
+binsNegative = ApicalContHist(:,1:round(numColumns/2)-1);
+binsPositive = ApicalContHist(:,round(numColumns/2)+1:end);
+binsAll = horzcat(ApicalContHist(:,1:round(numColumns/2)-1),ApicalContHist(:,round(numColumns/2)+1:end));
+prcPositive = ((sum(binsPositive,'all'))/(sum(binsAll,'all')))*100;
+prcNegative = ((sum(binsNegative,'all'))/(sum(binsAll,'all')))*100;
+prcPositive = ((sum(binsPositive,2))./(sum(binsAll,2)))*100;
+prcNegative = ((sum(binsNegative,2))./(sum(binsAll,2)))*100;
+% apical section
+prcPositiveA = ((sum(binsPositive(apicalLayers,:),'all'))/(sum(binsAll(apicalLayers,:),'all')))*100;
+prcNegativeA = ((sum(binsNegative(apicalLayers,:),'all'))/(sum(binsAll(apicalLayers,:),'all')))*100;
+% basal section
+prcPositiveB = ((sum(binsPositive(basalLayers,:),'all'))/(sum(binsAll(basalLayers,:),'all')))*100;
+prcNegativeB = ((sum(binsNegative(basalLayers,:),'all'))/(sum(binsAll(basalLayers,:),'all')))*100;
+
+% lateral section
+prcPositiveL = ((sum(binsPositive(lateralLayers,:),'all'))/(sum(binsAll(lateralLayers,:),'all')))*100;
+prcNegativeL = ((sum(binsNegative(lateralLayers,:),'all'))/(sum(binsAll(lateralLayers,:),'all')))*100;
+
+
+% find center of gravity for negative and positive
+timeVecNeg = centers(:,1:round(numColumns/2)-1);
+timeVecPos = centers(:,round(numColumns/2)+1:end);
+
+% APICAL
+binsNegativeA = mean(binsNegative(apicalLayers,:),1);
+binsPositiveA = mean(binsPositive(apicalLayers,:),1);
+
+sumPositiveA = sum(binsPositiveA,'all');
+sumNegativeA = sum(binsNegativeA,'all');
+
+sumAmpPositiveA = sum(binsPositiveA.*timeVecPos,'all');
+sumAmpNegativeA = sum(binsNegativeA.*timeVecNeg,'all');
+
+cogPositiveA = sumAmpPositiveA/sumPositiveA;
+cogNegativeA = sumAmpNegativeA/sumNegativeA;
+
+% get y value for center of gravity
+idxPosA1 = find(timeVecPos < cogPositiveA,1,'last');
+idxPosA2 = find(timeVecPos > cogPositiveA,1,'first');
+idxNegA1 = find(timeVecNeg < cogNegativeA,1,'last');
+idxNegA2 = find(timeVecNeg > cogNegativeA,1,'first');
+
+probPosA = interp1(timeVecPos(idxPosA1:idxPosA2),binsPositiveA(idxPosA1:idxPosA2),cogPositiveA);
+probNegA = interp1(timeVecNeg(idxNegA1:idxNegA2),binsNegativeA(idxNegA1:idxNegA2),cogNegativeA);
+
+% BASAL
+binsNegativeB = mean(binsNegative(basalLayers,:),1);
+binsPositiveB = mean(binsPositive(basalLayers,:),1);
+
+sumPositiveB = sum(binsPositiveB,'all');
+sumNegativeB = sum(binsNegativeB,'all');
+
+sumAmpPositiveB = sum(binsPositiveB.*timeVecPos,'all');
+sumAmpNegativeB = sum(binsNegativeB.*timeVecNeg,'all');
+
+cogPositiveB = sumAmpPositiveB/sumPositiveB;
+cogNegativeB = sumAmpNegativeB/sumNegativeB;
+
+% get y value for center of gravity
+idxPosB1 = find(timeVecPos < cogPositiveB,1,'last');
+idxPosB2 = find(timeVecPos > cogPositiveB,1,'first');
+idxNegB1 = find(timeVecNeg < cogNegativeB,1,'last');
+idxNegB2 = find(timeVecNeg > cogNegativeB,1,'first');
+
+probPosB = interp1(timeVecPos(idxPosB1:idxPosB2),binsPositiveB(idxPosB1:idxPosB2),cogPositiveB);
+probNegB = interp1(timeVecNeg(idxNegB1:idxNegB2),binsNegativeB(idxNegB1:idxNegB2),cogNegativeB);
+
+
+% LATERAL
+binsNegativeL = mean(binsNegative(lateralLayers,:),1);
+binsPositiveL = mean(binsPositive(lateralLayers,:),1);
+
+sumPositiveL = sum(binsPositiveL,'all');
+sumNegativeL = sum(binsNegativeL,'all');
+
+sumAmpPositiveL = sum(binsPositiveL.*timeVecPos,'all');
+sumAmpNegativeL = sum(binsNegativeL.*timeVecNeg,'all');
+
+cogPositiveL = sumAmpPositiveL/sumPositiveL;
+cogNegativeL = sumAmpNegativeL/sumNegativeL;
+
+% get y value for center of gravity
+idxPosL1 = find(timeVecPos < cogPositiveL,1,'last');
+idxPosL2 = find(timeVecPos > cogPositiveL,1,'first');
+idxNegL1 = find(timeVecNeg < cogNegativeL,1,'last');
+idxNegL2 = find(timeVecNeg > cogNegativeL,1,'first');
+
+probPosL = interp1(timeVecPos(idxPosL1:idxPosL2),binsPositiveL(idxPosL1:idxPosL2),cogPositiveL);
+probNegL = interp1(timeVecNeg(idxNegL1:idxNegL2),binsNegativeL(idxNegL1:idxNegL2),cogNegativeL);
+
+
+
+% get the range of speeds for 50% of the data
+[iqrPosA,xValsPosA] = iqr(posValuesA);
+binPosA = find(fix(centers)==fix(xValsPosA(1)) | fix(centers)==fix(xValsPosA(2)));
+yValsPosA = mean(ApicalContHist(apicalLayers,binPosA));
+
+[iqrPosB,xValsPosB] = iqr(posValuesB);
+binPosB = find(fix(centers)==fix(xValsPosB(1)) | fix(centers)==fix(xValsPosB(2)));
+yValsPosB = mean(ApicalContHist(basalLayers,binPosB));
+
+[iqrNegA,xValsNegA] = iqr(negValuesA);
+binNegA = find(fix(centers)==fix(xValsNegA(1)) | fix(centers)==fix(xValsNegA(2)));
+yValsNegA = mean(ApicalContHist(apicalLayers,binNegA));
+
+[iqrNegB,xValsNegB] = iqr(negValuesB);
+binNegB = find(fix(centers)==fix(xValsNegB(1)) | fix(centers)==fix(xValsNegB(2)));
+yValsNegB = mean(ApicalContHist(basalLayers,binNegB));
+
+
+% PLOTS
+subplot(1,3,1)
 imagesc(centers,(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
-title('\Delta z = 10 \mum','FontSize',16)
-xlabel('\Delta t (s)','FontSize',16)
-ylabel('Depth (\mum)','FontSize',16)
+title('\Delta z = 10 \mum')
+xlabel('\Delta t (s)')
+ylabel('Depth (\mum)')
 colorbar
-caxis([0 0.13])
-%xlim([-49 49])
-%xticks([-54.2 -40.7 -27.1 -13.6 0 13.6 27.1 40.7 54.2])
-xticks([-81.4 -67.8 -54.2 -40.7 -27.1 -13.6 0 13.6 27.1 40.7 54.2 67.8 81.4])
+clim([0 0.12])
+set(gca,'Fontsize',18)
+xlim([-(spf*12) spf*12])
+xticks([-80 -60 -40 -20 0 20 40 60 80])
 
+
+
+subplot(1,3,2)
+%plot(centers,mean(ApicalContHist(apicalLayers,:),1),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
+a = area(centers(1:13),mean(ApicalContHist(apicalLayers,1:13),1),'FaceColor',[0 0.52 0.54],'LineWidth',2);%EdgeColor','none')
+hold on
+b = area(centers(13:25),mean(ApicalContHist(apicalLayers,13:25),1),'FaceColor',[0.89 0.43 0],'LineWidth',2);%'EdgeColor','none')
+a.FaceAlpha = 0.5;
+b.FaceAlpha = 0.5;
+xlabel('\Delta t (s)')
+ylabel('Probability')
+set(gca,'Fontsize',18)
+ylim([0 0.12])
+xlim([-(spf*12) spf*12])
+xticks([-80 -60 -40 -20 0 20 40 60 80])
+grid on
+%alpha(0.5)
+c = area(centers(binNegA(1):binNegA(2)),mean(ApicalContHist(apicalLayers,binNegA(1):binNegA(2)),1),'FaceColor',[0 0.52 0.54],'LineWidth',2);%EdgeColor','none'))
+d = area(centers(binPosA(1):binPosA(2)),mean(ApicalContHist(apicalLayers,binPosA(1):binPosA(2)),1),'FaceColor',[0.89 0.43 0],'LineWidth',2);%EdgeColor','none'))
+%c.FaceAlpha = 0.75;
+%d.FaceAlpha = 0.75;
+scatter(cogNegativeA,probNegA,75,'k','filled')
+scatter(cogPositiveA,probPosA,75,'k','filled')
+
+%plot([xValsNegA(1),xValsNegA(1)], [0,yValsNegA(1)],'k','LineWidth',1)
+%plot([xValsNegA(2),xValsNegA(2)], [0,yValsNegA(2)],'k','LineWidth',1)
+%plot([xValsPosA(1),xValsPosA(1)], [0,yValsPosA(1)],'k','LineWidth',1)
+%plot([xValsPosA(2),xValsPosA(2)], [0,yValsPosA(2)],'k','LineWidth',1)
+
+
+% subplot(1,4,3)
+% %plot(centers,mean(ApicalContHist(apicalLayers,:),1),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
+% area(centers(1:13),mean(ApicalContHist(lateralLayers,1:13),1),'FaceColor',[0 0.52 0.54],'LineWidth',2)%EdgeColor','none')
+% hold on
+% area(centers(13:25),mean(ApicalContHist(lateralLayers,13:25),1),'FaceColor',[0.89 0.43 0],'LineWidth',2)%'EdgeColor','none')
+% xlabel('\Delta t (s)')
+% ylabel('Probability')
+% set(gca,'Fontsize',18)
+% ylim([0 0.12])
+% xlim([-(spf*12) spf*12])
+% xticks([-80 -60 -40 -20 0 20 40 60 80])
+% grid on
+% alpha(0.5)
+% scatter(cogNegativeL,probNegL,75,'k','filled')
+% scatter(cogPositiveL,probPosL,75,'k','filled')
+
+subplot(1,3,3)
+%plot(centers,mean(ApicalContHist(basalLayers,:),1),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
+a = area(centers(1:13),mean(ApicalContHist(basalLayers,1:13),1),'FaceColor',[0 0.52 0.54],'LineWidth',2);%'EdgeColor','none')
+hold on
+b = area(centers(13:25),mean(ApicalContHist(basalLayers,13:25),1),'FaceColor',[0.89 0.43 0],'LineWidth',2);%'EdgeColor','none')
+a.FaceAlpha = 0.5;
+b.FaceAlpha = 0.5;
+xlabel('\Delta t (s)')
+ylabel('Probability')
+set(gca,'Fontsize',18)
+ylim([0 0.12])
+xlim([-(spf*12) spf*12])
+xticks([-80 -60 -40 -20 0 20 40 60 80])
+grid on
+%alpha(0.25)
+c = area(centers(binNegB(1):binNegB(2)),mean(ApicalContHist(basalLayers,binNegB(1):binNegB(2)),1),'FaceColor',[0 0.52 0.54],'LineWidth',2);%EdgeColor','none'))
+d = area(centers(binPosB(1):binPosB(2)),mean(ApicalContHist(basalLayers,binPosB(1):binPosB(2)),1),'FaceColor',[0.89 0.43 0],'LineWidth',2);%EdgeColor','none'))
+%c.FaceAlpha = 0.75;
+%d.FaceAlpha = 0.75;
+scatter(cogNegativeB,probNegB,75,'k','filled')
+scatter(cogPositiveB,probPosB,75,'k','filled')
+%plot([xValsNegB(1),xValsNegB(1)], [0,yValsNegB(1)],'k','LineWidth',1)
+%plot([xValsNegB(2),xValsNegB(2)], [0,yValsNegB(2)],'k','LineWidth',1)
+%plot([xValsPosB(1),xValsPosB(1)], [0,yValsPosB(1)],'k','LineWidth',1)
+%plot([xValsPosB(2),xValsPosB(2)], [0,yValsPosB(2)],'k','LineWidth',1)
+
+
+% make boxplot of percentage positive vs negative
+x1 = prcNegative;
+x2 = prcPositive;
+x3 = prcNegative(apicalLayers,:);
+x4 = prcPositive(apicalLayers,:);
+x5 = prcNegative(basalLayers,:);
+x6 = prcPositive(basalLayers,:);
+%x = [x1; x2; x3; x4; x5; x6];
+x = [x1; x2];
+
+g1 = repmat({'Negative'},numel(prcNegative),1);
+g2 = repmat({'Positive'},numel(prcPositive),1);
+g3 = repmat({'Negative Apical'},numel(prcNegative(apicalLayers,:)),1);
+g4 = repmat({'Positive Apical'},numel(prcPositive(apicalLayers,:)),1);
+g5 = repmat({'Negative Basal'},numel(prcNegative(basalLayers,:)),1);
+g6 = repmat({'Positive Basal'},numel(prcPositive(basalLayers,:)),1);
+%g = [g1; g2; g3; g4; g5; g6];
+g = [g1; g2];
+
+[~,p1] = ttest2(prcNegative,prcPositive)
+[~,p1] = ttest2(prcNegative(apicalLayers,:),prcPositive(apicalLayers,:))
+[~,p1] = ttest2(prcNegative(basalLayers,:),prcPositive(basalLayers,:))
+
+[~,p1] = kstest2(prcNegative,prcPositive)
+[~,p1] = kstest2(prcNegative(apicalLayers,:),prcPositive(apicalLayers,:))
+[~,p1] = kstest2(prcNegative(basalLayers,:),prcPositive(basalLayers,:))
+figure
+boxplot(x,g,'Symbol','')
+grid on
+set(findobj(gca,'type','line'),'linew',2)
+set(gca,'FontSize',20)
+ylim([30 70])
+
+end
+
+
+% 
+% subplot(1,4,1)
+% %imagesc(edges(1:end-1),(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
+% %imagesc(edges,(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
+% imagesc(centers,(1:60)*0.2635,ApicalContHist);title('Contraction from apical end')
+% title('\Delta z = 10 \mum','FontSize',16)
+% xlabel('\Delta t (s)','FontSize',16)
+% ylabel('Depth (\mum)','FontSize',16)
+% colorbar
+% %caxis([0 0.35])
+% %xlim([-100 100])
+% %xlim([-49 49])
+% %xticks([-54.2 -40.7 -27.1 -13.6 0 13.6 27.1 40.7 54.2])
+% %xticks([-81.4 -67.8 -54.2 -40.7 -27.1 -13.6 0 13.6 27.1 40.7 54.2 67.8 81.4])
+% 
+% % subplot(1,4,2)
+% % plot(edges(1:end-1),ApicalContHist([1 11 22],:))
+% % legend('Apical 10','Lateral 10','Basal 10')
+% % xlabel('\Delta t (s)','FontSize',16)
+% % ylabel('Probability','FontSize',16)
+% % title('+ = Apical leading')
+% 
+% 
 % subplot(1,4,2)
-% plot(edges(1:end-1),ApicalContHist([1 11 22],:))
-% legend('Apical 10','Lateral 10','Basal 10')
+% %estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(1,:),[0.1 -50 22 0.2 50 22]);
+% %estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(1,:),[0.1 -20 10 0.2 20 10]);
+% plot(centers,ApicalContHist(1,:),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
 % xlabel('\Delta t (s)','FontSize',16)
 % ylabel('Probability','FontSize',16)
-% title('+ = Apical leading')
+% xlim([-100 100])
+% grid on
+% %title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
+% 
+% subplot(1,4,3)
+% %estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(11,:),[0.1 -50 22 0.2 50 22]);
+% %estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(11,:),[0.1 -20 10 0.2 20 10]);
+% plot(centers,ApicalContHist(11,:),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
+% xlabel('\Delta t (s)','FontSize',16)
+% ylabel('Probability','FontSize',16)
+% xlim([-100 100])
+% grid on
+% %title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
+% 
+% subplot(1,4,4)
+% %estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(22,:),[0.1 -50 22 0.2 50 22]);
+% %estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(22,:),[0.1 -20 10 0.2 20 10]);
+% plot(centers,ApicalContHist(22,:),'-o','Linewidth',2,'Color',[0.4940 0.1840 0.5560])
+% xlabel('\Delta t (s)','FontSize',16)
+% ylabel('Probability','FontSize',16)
+% xlim([-100 100])
+% grid on
+% %title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
 
-
-subplot(1,4,2)
-%estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(1,:),[0.1 -50 22 0.2 50 22]);
-estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(1,:),[0.1 -20 10 0.2 20 10]);
-xlabel('\Delta t (s)','FontSize',16)
-ylabel('Probability','FontSize',16)
-%title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
-
-subplot(1,4,3)
-%estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(11,:),[0.1 -50 22 0.2 50 22]);
-estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(11,:),[0.1 -20 10 0.2 20 10]);
-xlabel('\Delta t (s)','FontSize',16)
-ylabel('Probability','FontSize',16)
-%title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
-
-subplot(1,4,4)
-%estimate = fitcurveMultiGauss1D_simple(edges(1:end-1),ApicalContHist(22,:),[0.1 -50 22 0.2 50 22]);
-estimate = fitcurveMultiGauss1D_simple(centers,ApicalContHist(22,:),[0.1 -20 10 0.2 20 10]);
-xlabel('\Delta t (s)','FontSize',16)
-ylabel('Probability','FontSize',16)
-%title(['\mu_1= ',num2str(estimate(2)),', \mu_2= ',num2str(estimate(5)),', A_1/A_2= ',num2str(estimate(1)*estimate(3)/estimate(4)/estimate(6))])
-
-
-
-end
+%end
 
 
         % set a threshhold on the minimun numbers of layers

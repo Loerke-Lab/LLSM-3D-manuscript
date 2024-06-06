@@ -1,7 +1,7 @@
 function [] = MakeMovieIsosurfaceAndSurfaceUnwrapZip(data,CellID,tvec,savepath)
 fs = 16;
 
-clims = [0 100];
+clims = [10 100];
 
 % Gaussian 3d filter
 filtersize = [3 3 1];
@@ -160,7 +160,9 @@ for t = tvec
     %set(gca,'Xlim',[45 135])
     colormap jet
     caxis(clims)
+    set(gca,'Fontsize',20)
     %set(gca,'Position',[0.4 0.11 0.4 0.81]);
+    pause
     
       
     %set(gcf,'color','w','Position',[167 380 842 417]);
