@@ -35,23 +35,28 @@ Nf = length(interpf);
 minDurationSec = 180; % threshhold for the minimum duration of a trajectory in seconds
 
 % zvec is the depth vector to process
-% zvec = 1:60;
-% lsf = 0.1;
-% zsf = 0.2635;
-% Alayer = 1;
-% Llayer = 32;
-% Blayer = 60;
+zvec = 1:65;
+lsf = 0.1;
+zsf = 0.2635;
+Alayer = 1;
+Llayer = 32;
+Blayer = 65;
+
+zvecMic = zvec*zsf;
 
 % the following lines are for Klar Y27
-zvec =4:25;
-lsf = 0.163;
-zsf = 1;
-Alayer = 1;
-Llayer = 11;
-Blayer = 22;
+% zvec =4:25;
+% lsf = 0.163;
+% zsf = 1;
+% Alayer = 1;
+% Llayer = 11;
+% Blayer = 22;
+
+cellCount = 1;
 
 % initialize empty variable to store results
 YmatCellLayers = [];
+maxFMatLayers = [];
 
 Ntype = numel(dataSets);
 for dat=1:Ntype
@@ -69,7 +74,7 @@ for dat=1:Ntype
         cd(data(mn).Source); cd ..
         loadGdata = load('GeometryData.mat');
         Area = loadGdata.Area(:,:,zvec)*lsf^2;
-        Area = Area(:,1:99,:); %                    JUST FOR Y27 KLAR
+        %Area = Area(:,1:99,:); %                    JUST FOR Y27 KLAR
         [Ncells,~,Nlayers] = size(Area);
 
         % get the rate of change of the area
@@ -84,11 +89,12 @@ for dat=1:Ntype
             
             cellAreaChange = squeeze(AreaChange(ii,:,:))';
             
-            [~,idx] = FiniteSequenceFromNans(mean(cellAreaChange),1);
+            %[~,idx] = FiniteSequenceFromNans(mean(cellAreaChange),1);
+            [~,idx] = FiniteSequenceFromNans(mean(cellAreaChange));
             if numel(idx) < minDurFrames
                 continue;
             end
-            imagesc(cellAreaChange(:,idx));
+            %imagesc(cellAreaChange(:,idx));
             
             cellMat = NaN(Nlayers,Nf);
             for z=1:Nlayers
@@ -101,13 +107,18 @@ for dat=1:Ntype
                 [Y2,f,maxF] = analysisfft(ARdt,spf,plotfft);
 
                 Y2i = interp1(f,Y2,interpf);
+                %imagesc(Y2i)
 
                 cellMat(z,:) = Y2i;
+                maxFMat(z,:) = maxF; % max before interpolation
+
 
 
             end % z
+
             
             YmatCellLayers = cat(3,YmatCellLayers,cellMat);
+            maxFMatLayers = cat(2,maxFMatLayers,maxFMat); % max before interpolation
 
         end % cell
         
@@ -126,7 +137,7 @@ for dat=1:Ntype
 
     end % movie
 end % type
-zvecMic = zvec*zsf;
+
 
 
 
@@ -137,9 +148,51 @@ imagesc(interpf,zvecMic,MovieMean)
 colorbar
 ylabel('Depth (microns)','FontSize',fs)
 xlabel('Frequency (Hz)','FontSize',fs)
-caxis([0.4 2.5])
+%caxis([0.4 2.5])
+caxis([0.3 2.6])
+hold on
 
 Ncells = size(YmatCellLayers,3);
+numLayers = size(YmatCellLayers,1);
+
+%%%
+% using average FFT
+
+%loop over all z layers and max val
+% numLayers = size(MovieMean,1);
+% for l = 1:numLayers
+%     layerToUse = MovieMean(l,:);
+%     [maxVal,indexMax] = max(layerToUse);
+%     freqAtMax(:,l) = interpf(indexMax);
+% end
+% 
+% figure(1)
+% plot(freqAtMax,zvecMic,'LineWidth',1,'Color','k');%,'LineStyle','--')
+% avgPeakFreq = mean(freqAtMax);
+%%%
+
+%%%
+% individual cell maximum
+%loop over all cells
+% for c = 1:Ncells
+% %loop over all z layers and max val
+%     for l = 1:numLayers
+%         layerToUse = YmatCellLayers(l,:);
+%         [maxVal,indexMax] = max(layerToUse);
+%         allFreqAtMax(l,c) = interpf(indexMax);
+%     end
+% %     imagesc(interpf,zvecMic,YmatCellLayers(:,:,c))
+% %     colorbar
+% %     caxis([0 3])
+% %     hold on
+% %     plot(allFreqAtMax(:,c),zvecMic,'LineWidth',1,'Color','k')
+% %     pause
+% end
+% 
+% %figure(2)
+% %plot(freqAtMax,zvecMic,'LineWidth',1,'Color','k');%,'LineStyle','--')
+% avgPeakFreq = mean(allFreqAtMax,2);
+%%%
 
 
 
@@ -154,11 +207,36 @@ ylabel('FFT Amplitude','FontSize',fs)
 title(['Ncells=',num2str(Ncells)],'FontSize',fs)
 grid on
 set(gca,'Ylim',[-1 7])
+%hold on
+%plot(mean(x,2),'dg')
 
 [~,p_AvL] = ttest2(squeeze(YmatCellLayers(Alayer,10,:)),squeeze(YmatCellLayers(Llayer,10,:)))
 [~,p_AvB] = ttest2(squeeze(YmatCellLayers(Alayer,10,:)),squeeze(YmatCellLayers(Blayer,10,:)))
 [~,p_LvB] = ttest2(squeeze(YmatCellLayers(Llayer,10,:)),squeeze(YmatCellLayers(Blayer,10,:)))
 
+
+%%%
+% make box plot of peak frequency at apical, lateral, basal
+% figure
+% %subplot(1,2,1)
+% y = [(allFreqAtMax(Alayer,:))';(allFreqAtMax(Llayer,:))';(allFreqAtMax(Blayer,:))'];
+% g1 = repmat({'Apical'},Ncells,1);
+% g2 = repmat({'Lateral'},Ncells,1);
+% g3 = repmat({'Basal'},Ncells,1);
+% g = [g1; g2; g3];
+% boxplot(y,g,'Symbol','')
+% ylabel('Peak Frequency','FontSize',fs)
+% title(['Ncells=',num2str(Ncells)],'FontSize',fs)
+% grid on
+% set(gca,'Ylim',[0 0.03])
+% 
+% y2 = [allFreqAtMax(Alayer,:);allFreqAtMax(Llayer,:);allFreqAtMax(Blayer,:)];
+% hold on
+% plot(mean(y2,2),'dg')
+% 
+% [~,p_AvL] = ttest2(allFreqAtMax(Alayer,:),allFreqAtMax(Llayer,:))
+% [~,p_AvB] = ttest2(allFreqAtMax(Alayer,:),allFreqAtMax(Blayer,:))
+% [~,p_LvB] = ttest2(allFreqAtMax(Llayer,:),allFreqAtMax(Blayer,:))
 
 
 % figure(2)

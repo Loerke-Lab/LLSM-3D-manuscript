@@ -27,9 +27,9 @@ fs = 16; % font size for figures
 % length scale factor for X-Y (microns per pixel)
 lsf = 0.104;
 
-% length sacle factor for Z (mircons per pixel)
+% length scale factor for Z (mircons per pixel)
 zsf = 0.2635;
-zvec = 1:70; % z-layers to select from z-stack
+zvec = 1:60; % z-layers to select from z-stack
 zvecMic = zvec*zsf;
 
 % deltaTSec is the time interval in seconds for caluclating the rate DA/DT
@@ -68,8 +68,9 @@ for mn = 1:Nmovies
         startFrame = find(all(finite,1),1,'first');
         stopFrame   = find(all(finite,1),1,'last');
 
+        %tvec = startFrame:stopFrame;
 
-        tvec = startFrame:stopFrame;
+        [~, tvec] = FiniteSequenceFromNans(mean(CellArea,1));%,1);
         
         if isempty(tvec)
             continue;
@@ -77,7 +78,6 @@ for mn = 1:Nmovies
 
 
         AreaA = CellArea(:,tvec);
-
       
         % smooth out the area matrix
         AreaAF = filterImage3DpaddedEdges(AreaA, 'Gauss', 2);
@@ -85,6 +85,7 @@ for mn = 1:Nmovies
         % calculate the rate of change and convert to microns^2/min
         [dAdtmat] = RateOverDeltaT( AreaAF, deltaTframes);
         dAdtmat = dAdtmat/spf*60;
+
 
         tvecMin = (1:size(dAdtmat,2))*spf/60;
         
