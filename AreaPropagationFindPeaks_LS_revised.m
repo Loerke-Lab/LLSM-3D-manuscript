@@ -18,7 +18,7 @@ function [ExpandMatAll,ContractMatAll] = AreaPropagationFindPeaks_LS_revised(dat
 %close all;
 %figure
 
-zvec = 1:60;
+zvec = 1:70;
 Nz = numel(zvec);
 
 % length and time scale factors
@@ -35,6 +35,8 @@ DeltaTminutes = DeltaTframes*spf/60;
 minDurationMin = 4;
 minDurationFrames =round(minDurationMin*60/spf);
 
+% use the function b2r to generate a colormap, flip so it goes from red to blue
+b2rcmap = flip(b2r(-6,6),1);
 
 % initialize results matrices
 ExpandMatAll = [];
@@ -52,7 +54,7 @@ for mn=1:Nmovies
     loadGdata = load('GeometryData.mat');
     Area3D = loadGdata.Area(:,:,zvec)*XYsf^2;
     Ncells = size(Area3D,1); % number of cells to loop over
-    for icell = 1:Ncells
+    for icell = 29:Ncells
         
         AreaZvT = squeeze(Area3D(icell,:,:))'; % squeeze cell area so we have depth (rows) versus time (columns)
         
@@ -170,19 +172,25 @@ for mn=1:Nmovies
             % title('Apical Expansion 4um delay time')
 
             subplot(1,3,1)
-            imagesc(tvecMin,zvec*Zsf,AreaRateZvT);colorbar
+            imagesc(tvecMin,zvec*Zsf,AreaRateZvT)
+            %colormap(b2rcmap)
+            colorbar
+            caxis(gca,[-10.5299, 10.5299]);
 
             subplot(1,3,2)
             ADFc = AreaRateZvT;
             ADFc(Lcnt>0) = NaN;
             imagesc(tvecMin,zvec*Zsf,ADFc)
-            colorbar;
+            %colormap(b2rcmap)
+            colorbar
+            caxis(gca,[-10.5299, 10.5299]);
             title('Contraction Peaks')
             
             
             subplot(1,3,3)
             imagesc(tvecMin,zvec*Zsf,Lcnt)
             title('Contraction Peaks Labeled')
+            colorbar
 %             
 %             
 %             subplot(2,3,6)

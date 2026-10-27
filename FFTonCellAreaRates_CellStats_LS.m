@@ -35,9 +35,12 @@ Nf = length(interpf);
 minDurationSec = 180; % threshhold for the minimum duration of a trajectory in seconds
 
 % zvec is the depth vector to process
-zvec = 1:65;
+% zvec = 1:65;
+zvec = 1:45;
 lsf = 0.1;
-zsf = 0.2635;
+% zsf = 0.2635;
+
+zsf = 0.537;
 Alayer = 1;
 Llayer = 32;
 Blayer = 65;
@@ -71,7 +74,7 @@ for dat=1:Ntype
         minDurFrames = minDurationSec/spf;
 
         % move to the movie directory to load cell area data
-        cd(data(mn).Source); cd ..
+        cd(data(mn).Source); %cd ..
         loadGdata = load('GeometryData.mat');
         Area = loadGdata.Area(:,:,zvec)*lsf^2;
         %Area = Area(:,1:99,:); %                    JUST FOR Y27 KLAR

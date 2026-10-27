@@ -29,7 +29,7 @@ lsf = 0.104;
 
 % length scale factor for Z (mircons per pixel)
 zsf = 0.2635;
-zvec = 1:60; % z-layers to select from z-stack
+zvec = 1:70; % z-layers to select from z-stack
 zvecMic = zvec*zsf;
 
 % deltaTSec is the time interval in seconds for caluclating the rate DA/DT
@@ -47,7 +47,7 @@ for mn = 1:Nmovies
     
     % Move to directory and load required data
     cd(data(MovieNums(mn)).Source)
-    cd ..
+    %cd ..
 
     spf = data.SecPerFrame; % seconds per frame conversion factor
     

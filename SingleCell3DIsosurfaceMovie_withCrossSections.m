@@ -104,8 +104,11 @@ for t = tvec
 
         image3 = repmat(image1,[1,1,3]);
         imageRGB = 0.60*image3 + 0.40*RGBcells;
-        filename = strcat('~/Desktop/SampleVideo/Layer',num2str(layer),'.tif');
-        imwrite(imageRGB,filename);
+        %filename = strcat('~/Desktop/SampleVideo/Layer',num2str(layer),'.tif');
+        %imwrite(imageRGB,filename);
+        figure
+        imshow(imageRGB)
+        pause
     end
 
     

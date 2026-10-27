@@ -2,7 +2,7 @@ function [] = ImwriteFramesOfIsosurface_mapAreaRate2color(data,cellrownum,frameS
 
 % if just wanting to view images but not create a movie, set to false.
 pathImages = data.Source;
-zvec = 1:60;
+zvec = 1:68;
 spf = data.SecPerFrame; 
 DeltaT = round(30/spf);
 XYsf = 0.1;
@@ -52,6 +52,7 @@ maxR = max(dAdtmat(:));
 minR = abs(min(dAdtmat(:)));
 maxmaxR = max(maxR,minR);
 clims = [-maxmaxR maxmaxR];
+clims = [-5 5];
 %clims = [-2 2];
 b2r_cmap = b2r(-maxmaxR,maxmaxR);
 b2r_cmap = flip(b2r_cmap,1);
@@ -88,7 +89,7 @@ for it = 1:FrameNum
 %     
 %     subplot(1,2,1)
     IsosurfaceWithIntensity(L,IntensityMat,CellID,b2r_cmap,clims);
-    view(-83,10)
+    view(-15,10)
    % set(gca,'Position',[0.05    0.1100    0.3347    0.8150])
 %     
 %     subplot(1,2,2);
@@ -154,7 +155,7 @@ linearInd = sub2ind(size(BWmembrane), round(p.vertices(:,2)), round(p.vertices(:
 % select type of intensities to view: vertex or face intensities
 
 VertexInts2 = ImMyosin(linearInd);
-FaceInts2 = nanmean([VertexInts2(p.faces(:,1)),VertexInts2(p.faces(:,2)),VertexInts2(p.faces(:,3))],2);
+FaceInts2 = mean([VertexInts2(p.faces(:,1)),VertexInts2(p.faces(:,2)),VertexInts2(p.faces(:,3))],2,'omitnan');
 
 
 
@@ -189,8 +190,8 @@ function [Row,Col] = FindCentroid(BW)
 [Nrows,Ncols,Nlayers] = size(BW);
 [ColGrid,RowGrid,~] = meshgrid(1:Ncols,1:Nrows,1:Nlayers);
 
-Row = round(nanmean(RowGrid(BW)));
-Col = round(nanmean(ColGrid(BW)));
+Row = round(mean(RowGrid(BW),'omitnan'));
+Col = round(mean(ColGrid(BW),'omitnan'));
 
 end
 

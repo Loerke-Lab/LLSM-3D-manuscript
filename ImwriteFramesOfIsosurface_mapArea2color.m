@@ -3,7 +3,7 @@ function [] = ImwriteFramesOfIsosurface_mapArea2color(data,cellrownum,frameSelec
 
 % if just wanting to view images but not create a movie, set to false.
 pathImages = data.Source;
-zvec = 1:60;
+zvec = 1:68;
 spf = data.SecPerFrame; 
 XYsf = 0.1;
 Zsf = 0.5;
@@ -28,7 +28,8 @@ CellAreaZvT = CellAreaZvT(:,frameVec);
 [AreaFilt] = filterImage3DpaddedEdges(CellAreaZvT, 'Gauss', [2,1,0]);
 
 
-jetmap = jet(256);
+%jetmap = jet(256);
+jetmap = parula(256);
 imagesc(AreaFilt);colorbar;colormap(jetmap)
 pause;
 
@@ -41,6 +42,7 @@ AreaFilt = AreaFilt(:,frameSelection);
 maxR = max(AreaFilt(:));
 minR = min(AreaFilt(:));
 clims = [minR maxR];
+clims = [25 40];
 
 frameVec= frameVec(frameSelection);
 clf;
@@ -89,7 +91,8 @@ for it = 1:FrameNum
 %     set(gca,'Position',[0.403    0.1134    0.5    0.7997])
 %     set(gca,'Color','w')
 %     set(gcf,'Position',[260   478   802   319])
-     view(0,10)
+     %view(0,10)
+     view(-15,10)
      if nargin > 3
         frame = getframe(gcf);   
         filename = strcat(savepath,'Frame',num2str(frameIdx),'.tif');
@@ -138,7 +141,7 @@ linearInd = sub2ind(size(BWmembrane), round(p.vertices(:,2)), round(p.vertices(:
 % select type of intensities to view: vertex or face intensities
 
 VertexInts2 = ImMyosin(linearInd);
-FaceInts2 = nanmean([VertexInts2(p.faces(:,1)),VertexInts2(p.faces(:,2)),VertexInts2(p.faces(:,3))],2);
+FaceInts2 = mean([VertexInts2(p.faces(:,1)),VertexInts2(p.faces(:,2)),VertexInts2(p.faces(:,3))],2,'omitnan');
 
 
 
@@ -173,8 +176,8 @@ function [Row,Col] = FindCentroid(BW)
 [Nrows,Ncols,Nlayers] = size(BW);
 [ColGrid,RowGrid,~] = meshgrid(1:Ncols,1:Nrows,1:Nlayers);
 
-Row = round(nanmean(RowGrid(BW)));
-Col = round(nanmean(ColGrid(BW)));
+Row = round(mean(RowGrid(BW),'omitnan'));
+Col = round(mean(ColGrid(BW),'omitnan'));
 
 end
 
